@@ -1,0 +1,31 @@
+{
+  "name": "blog-posts",
+  "version": "0.0.0",
+  "description": "BlogPosts",
+  "main": "app.js",
+  "author": {
+    "name": ""
+  },
+  "scripts": {
+    "test": "mocha -r ts-node/register 'tests/**/*.ts'",
+    "tests": "npm test && tsc --build",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
+  },
+  "dependencies": {
+    "@types/express": "^4.17.13",
+    "axios": "^0.25.0",
+    "express": "^4.17.2",
+    "express-validator": "^6.14.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.1.0",
+    "@types/node": "^14.14.7",
+    "chai": "^4.3.6",
+    "mocha": "^9.2.0",
+    "supertest": "^6.2.2",
+    "ts-node": "^10.5.0",
+    "typescript": "^4.5.5"
+  }
+}
