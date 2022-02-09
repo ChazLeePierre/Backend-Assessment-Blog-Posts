@@ -11,29 +11,18 @@ import { validateGetPosts } from "./validation.js";
 
 import app from './app';
 
-// hostname to communinicate with Hatchways API
-const API_BASE_URL = "https://api.hatchways.io";
+// Hostname to communinicate with Hatchways API
+const HATCH_BASE_URL = "https://api.hatchways.io";
 
-// "cache", alternatively I would use Redis but I'm working on a Windows environment
-// & didn't want to switch over to a virtual machine or Windows Subsystem for Linux
+// "cache"
 let blogPostCache: Map<number, IPost[]> = new Map();
 
-// default HTTP port
-const HTTP_PORT = 8080;
-
-// call this function after the http server starts listening for requests
-app.listen(HTTP_PORT, () => {
-    console.log("Express http server listening on: " + HTTP_PORT);
-});
-
-// setup a route on the 'root' of the url
-// IE: http://localhost:8080/
+// GET /api/ping
 app.get("/api/ping", async (req: Request, res: Response) => {
     res.status(200).send({ success: true });
 });
 
-// now add a route for the /headers page
-// IE: http://localhost:8080/headers
+// GET /api/posts
 app.get(
     "/api/posts",
     validateGetPosts,
@@ -42,27 +31,36 @@ app.get(
         res: Response,
         next: NextFunction
     ) => {
+        // Stores data returned from the Hatchway API for current request
         let blogPosts: Map<string, IPost> = new Map<string, IPost>();
-        let params: any = (({ tags, sortBy, direction }) => ({ tags, sortBy, direction }))(req.query);
-        let cacheId: string = `${params.tags}-${params.sortBy}-${params.direction}`;
 
+        // Parse search query params
+        let params: any = (({ tags, sortBy, direction }) => ({ tags, sortBy, direction }))(req.query);
         let parsedTags = `${params.tags}`.split(',');
 
+        // Generate cacheId based on search query params
+        let cacheId: string = `${params.tags}-${params.sortBy}-${params.direction}`;
+
+        // Check to see if cached result already exists
         const cachedBlogPosts: IPost[] = blogPostCache[cacheId];
 
+        // If cached result exists, send back to user
         if (cachedBlogPosts) {
             res.status(200).send({ "posts": cachedBlogPosts });
             return;
         }
 
         for (const tag of parsedTags) {
-            let url = new URL(`${API_BASE_URL}/assessment/blog/posts?tag=${tag}`);
+            // Generate URL based on search query params
+            let url = new URL(`${HATCH_BASE_URL}/assessment/blog/posts?tag=${tag}`);
             if (params.sortBy) url.searchParams.append('sortBy', `${params.sortBy}`);
             if (params.direction) url.searchParams.append('direction', `${params.direction}`);
 
+            // Get posts data from the Hatchway API
             await axios.get<IBlogPost>(url.toString())
                 .then(async (blogPostResponse: AxiosResponse<IBlogPost, any>) => {
                     for (const p of blogPostResponse.data.posts) {
+                        // Store posts data into map to ensure no duplicates
                         let key: string = `${p.id}-${p[`${params.sortBy}`]}`;
                         blogPosts.set(key, p);
                     }
@@ -71,16 +69,22 @@ app.get(
                 });
         }
 
+        // Determine sorting order based on direction parameter
         let asc: boolean = params.direction === 'asc';
 
+        // Sort the blogPosts based on sortBy parameter
         let array = [...blogPosts]
             .sort((left, right) => {
                 let l = parseFloat(left[0].split('-')[1]), r = parseFloat(right[0].split('-')[1]);
                 return asc ? (l - r) : (r - l);
             }).map(bp => bp[1]);
 
+        // Store final result in cache for future requests
         blogPostCache[`${params.tags}-${params.sortBy}-${params.direction}`] = array;
 
+        // Return data back to requestor
         res.status(200).send({ "posts": array });
     }
 );
+
+export default app;

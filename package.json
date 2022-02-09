@@ -2,14 +2,16 @@
   "name": "blog-posts",
   "version": "0.0.0",
   "description": "BlogPosts",
-  "main": "app.js",
+  "main": "api.js",
   "author": {
     "name": ""
   },
   "scripts": {
-    "test": "mocha -r ts-node/register 'tests/**/*.ts'",
-    "tests": "npm test && tsc --build",
+    "test": "mocha --timeout 15000 -r ts-node/register 'tests/**/*.ts'",
+    "tests": "npm test && npm run build",
+    "dev": "node .",
     "build": "tsc --build",
+    "start": "npm run build && npm run dev",
     "clean": "tsc --build --clean"
   },
   "dependencies": {
